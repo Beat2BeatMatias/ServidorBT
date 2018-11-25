@@ -12,6 +12,5 @@
     <string name="ConexionActual">Conexión actual:</string>
     <string name="ConectandoA">Conectando a</string>
     <string name="EnviandoMensaje">Enviando mensaje</string>
-    <string name="MsgErrorConexion">Error al enviar al mensaje: no hay
-conexiones activas</string>
+    <string name="MsgErrorConexion">Error al enviar al mensaje: no hay conexiones activas</string>
 </resources>
