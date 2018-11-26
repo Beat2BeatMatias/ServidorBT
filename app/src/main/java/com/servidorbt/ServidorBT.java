@@ -1,11 +1,15 @@
 package com.servidorbt;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Message;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ServidorBT extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "ServidorBT";
@@ -164,6 +169,74 @@ public class ServidorBT extends AppCompatActivity implements View.OnClickListene
         btnBluetooth.setOnClickListener(this);
         btnSalir.setOnClickListener(this);
     }
+    @SuppressLint("HandlerLeak")
+    private final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            byte[] buffer = null;
+            String mensaje = null;
+            // Atendemos al tipo de mensaje
+            switch(msg.what) {
+                // Mensaje de lectura: se mostrara en el TextView
+                case ServServidorBT.MSG_LEER: {
+                    buffer = (byte[])msg.obj;
+                    mensaje = new String(buffer, 0, msg.arg1);
+                    tvMensaje.setText(mensaje);
+                    break;
+                }
+                // Mensaje de escritura: se mostrara en el Toast
+                case ServServidorBT.MSG_ESCRIBIR: {
+                    buffer = (byte[])msg.obj;
+                    mensaje = new String(buffer);
+                    mensaje = getString(R.string.EnviandoMensaje) + ": " +
+                            mensaje;
+                    Toast.makeText(getApplicationContext(), mensaje,
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                }
+                // Mensaje de cambio de estado
+                case ServServidorBT.MSG_CAMBIO_ESTADO: {
+                    switch(msg.arg1) {
+                        case ServServidorBT.ESTADO_ATENDIENDO_PETICIONES:
+                            break;
+                        // CONECTADO: Se muestra el dispositivo al que se ha
+                        // conectado y se activa el boton de enviar
+                        case ServServidorBT.ESTADO_CONECTADO: {
+                            mensaje = getString(R.string.ConexionActual) + " "
+                                    + servicio.getNombreDispositivo();
+                            Toast.makeText(getApplicationContext(), mensaje,
+                                    Toast.LENGTH_SHORT).show();
+                            tvConexion.setText(mensaje);
+                            btnEnviar.setEnabled(true);
+                            break;
+                        }
+                        // NINGUNO: Mensaje por defecto. Desactivacion del
+                        // boton de enviar
+                        case ServServidorBT.ESTADO_NINGUNO: {
+                            mensaje = getString(R.string.SinConexion);
+                            Toast.makeText(getApplicationContext(), mensaje,
+                                    Toast.LENGTH_SHORT).show();
+                            tvConexion.setText(mensaje);
+                            btnEnviar.setEnabled(false);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
+                // Mensaje de alerta: se mostrara en el Toast
+                case ServServidorBT.MSG_ALERTA: {
+                    mensaje = msg.getData().getString(ALERTA);
+                    Toast.makeText(getApplicationContext(), mensaje,
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }; // Fin Handler
     protected void onActivityResult (int requestCode, int resultCode, Intent
             data) {
         switch(requestCode)
@@ -188,12 +261,6 @@ public class ServidorBT extends AppCompatActivity implements View.OnClickListene
                 break;
         }
     }
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_servidor_bt, menu);
-        return true;
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();
